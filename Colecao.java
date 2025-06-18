@@ -1,0 +1,129 @@
+import java.io.*;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+public class Colecao<T extends PdfEntry> {
+    private String nome;
+    private String autor;
+    private int limite;
+    private Class<T> tipo;
+    private List<T> entradas;
+
+    public Colecao(String nome, String autor, int limite, Class<T> tipo) {
+        this.nome = nome;
+        this.autor = autor;
+        this.limite = limite;
+        this.tipo = tipo;
+        this.entradas = new ArrayList<>();
+    }
+
+    public boolean adicionarEntrada(PdfEntry entrada) {
+        if (!tipo.isInstance(entrada)) return false;
+        if (!entrada.getAutores().contains(autor)) return false;
+        if (entradas.size() >= limite) return false;
+
+        entradas.add(tipo.cast(entrada));
+        return true;
+    }
+
+    public boolean removerEntrada(PdfEntry entrada) {
+        return entradas.remove(entrada);
+    }
+
+    public boolean estaVazia() {
+        return entradas.isEmpty();
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public String getAutor() {
+        return autor;
+    }
+
+    public int getLimite() {
+        return limite;
+    }
+
+    public Class<T> getTipo() {
+        return tipo;
+    }
+
+    public List<T> getEntradas() {
+        return entradas;
+    }
+
+    public int tamanho() {
+        return entradas.size();
+    }
+
+    @Override
+    public String toString() {
+        return "Coleção '" + nome + "' de " + tipo.getSimpleName() +
+               " (autor: " + autor + ", " + entradas.size() + "/" + limite + " itens)";
+    }
+
+    // 📘 EXPORTAÇÃO BIBTEX (somente para coleções de Livro)
+    public void exportarBibTex(String caminhoArquivo) throws IOException {
+        if (!tipo.equals(Livro.class)) {
+            throw new IllegalArgumentException("Exportação BibTeX só é válida para coleções de livros.");
+        }
+
+        try (FileWriter writer = new FileWriter(caminhoArquivo)) {
+            for (T entrada : entradas) {
+                Livro livro = (Livro) entrada;
+
+                writer.write("@book{" + formatarChaveBibtex(livro) + ",\n");
+                writer.write("  author    = {" + livro.getAutores() + "},\n");
+                writer.write("  title     = {" + livro.getTitulo() + "},\n");
+
+                if (!livro.getSubtitulo().isEmpty()) {
+                    writer.write("  subtitle  = {" + livro.getSubtitulo() + "},\n");
+                }
+
+                writer.write("  year      = {" + livro.getAnoPublicacao() + "},\n");
+
+                if (!livro.getEditora().isEmpty()) {
+                    writer.write("  publisher = {" + livro.getEditora() + "},\n");
+                }
+
+                writer.write("}\n\n");
+            }
+        }
+    }
+
+    private String formatarChaveBibtex(Livro livro) {
+        String autor = livro.getAutores().split(",")[0].trim().toLowerCase().replaceAll("\\s+", "");
+        return autor + livro.getAnoPublicacao();
+    }
+
+    
+    public void exportarZip(String caminhoZip) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(caminhoZip);
+             ZipOutputStream zos = new ZipOutputStream(fos)) {
+
+            for (T entrada : entradas) {
+                File pdf = new File(entrada.getPathPdf() + ".pdf");
+                if (!pdf.exists()) {
+                    System.out.println("Arquivo não encontrado: " + pdf.getPath());
+                    continue;
+                }
+
+                try (FileInputStream fis = new FileInputStream(pdf)) {
+                    ZipEntry zipEntry = new ZipEntry(pdf.getName());
+                    zos.putNextEntry(zipEntry);
+
+                    byte[] buffer = new byte[1024];
+                    int len;
+                    while ((len = fis.read(buffer)) > 0) {
+                        zos.write(buffer, 0, len);
+                    }
+
+                    zos.closeEntry();
+                }
+            }
+        }
+    }
+}
