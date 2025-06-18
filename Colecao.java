@@ -65,7 +65,7 @@ public class Colecao<T extends PdfEntry> {
                " (autor: " + autor + ", " + entradas.size() + "/" + limite + " itens)";
     }
 
-    // 📘 EXPORTAÇÃO BIBTEX (somente para coleções de Livro)
+    
     public void exportarBibTex(String caminhoArquivo) throws IOException {
         if (!tipo.equals(Livro.class)) {
             throw new IllegalArgumentException("Exportação BibTeX só é válida para coleções de livros.");
