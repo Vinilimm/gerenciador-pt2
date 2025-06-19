@@ -65,7 +65,6 @@ public class Colecao<T extends PdfEntry> {
                " (autor: " + autor + ", " + entradas.size() + "/" + limite + " itens)";
     }
 
-  
     public void exportarBibTex(String caminhoArquivo) throws IOException {
         if (!tipo.equals(Livro.class)) {
             throw new IllegalArgumentException("Exportação BibTeX só é válida para coleções de livros.");
@@ -76,17 +75,17 @@ public class Colecao<T extends PdfEntry> {
                 Livro livro = (Livro) entrada;
 
                 writer.write("@book{" + formatarChaveBibtex(livro) + ",\n");
-                writer.write("  author    = {" + livro.getAutores() + "},\n");
-                writer.write("  title     = {" + livro.getTitulo() + "},\n");
+                writer.write("  author    = \"" + String.join(" and ", livro.getAutores()) + "\",\n");
+                writer.write("  title     = \"" + livro.getTitulo() + "\",\n");
 
                 if (!livro.getSubtitulo().isEmpty()) {
-                    writer.write("  subtitle  = {" + livro.getSubtitulo() + "},\n");
+                    writer.write("  subtitle  = \"" + livro.getSubtitulo() + "\",\n");
                 }
 
-                writer.write("  year      = {" + livro.getAnoPublicacao() + "},\n");
+                writer.write("  year      = \"" + livro.getAnoPublicacao() + "\",\n");
 
                 if (!livro.getEditora().isEmpty()) {
-                    writer.write("  publisher = {" + livro.getEditora() + "},\n");
+                    writer.write("  publisher = \"" + livro.getEditora() + "\",\n");
                 }
 
                 writer.write("}\n\n");
@@ -96,35 +95,65 @@ public class Colecao<T extends PdfEntry> {
 
     private String formatarChaveBibtex(Livro livro) {
         String autor = livro.getAutores().get(0).toLowerCase().replaceAll("\\s+", "");
-
         return autor + livro.getAnoPublicacao();
     }
 
-    
     public void exportarZip(String caminhoZip) throws IOException {
-        try (FileOutputStream fos = new FileOutputStream(caminhoZip);
-             ZipOutputStream zos = new ZipOutputStream(fos)) {
+        // Garante a extensão .zip
+        if (!caminhoZip.toLowerCase().endsWith(".zip")) {
+            caminhoZip += ".zip";
+        }
 
+        int arquivosAdicionados = 0;
+        int arquivosNaoEncontrados = 0;
+        List<String> arquivosFaltantes = new ArrayList<>();
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(caminhoZip))) {
             for (T entrada : entradas) {
-                File pdf = new File(entrada.getPathPdf() + ".pdf");
-                if (!pdf.exists()) {
-                    System.out.println("Arquivo não encontrado: " + pdf.getPath());
+                String pathPdf = entrada.getPathPdf();
+                
+                // Normaliza a extensão .pdf
+                if (!pathPdf.toLowerCase().endsWith(".pdf")) {
+                    pathPdf += ".pdf";
+                }
+                
+                File pdfFile = new File(pathPdf);
+                if (!pdfFile.exists() || !pdfFile.isFile()) {
+                    arquivosNaoEncontrados++;
+                    arquivosFaltantes.add(pathPdf);
                     continue;
                 }
 
-                try (FileInputStream fis = new FileInputStream(pdf)) {
-                    ZipEntry zipEntry = new ZipEntry(pdf.getName());
+                try (FileInputStream fis = new FileInputStream(pdfFile)) {
+                    // Usa apenas o nome do arquivo no ZIP
+                    ZipEntry zipEntry = new ZipEntry(pdfFile.getName());
                     zos.putNextEntry(zipEntry);
 
                     byte[] buffer = new byte[1024];
-                    int len;
-                    while ((len = fis.read(buffer)) > 0) {
-                        zos.write(buffer, 0, len);
+                    int length;
+                    while ((length = fis.read(buffer)) > 0) {
+                        zos.write(buffer, 0, length);
                     }
-
                     zos.closeEntry();
+                    arquivosAdicionados++;
                 }
             }
+        }
+
+        // Gera relatório detalhado
+        System.out.println("\n=== Resultado da Exportacao ===");
+        System.out.println("Arquivo ZIP criado em: " + new File(caminhoZip).getAbsolutePath());
+        System.out.println("Total de itens na colecao: " + entradas.size());
+        System.out.println("PDFs adicionados com sucesso: " + arquivosAdicionados);
+        
+        if (arquivosNaoEncontrados > 0) {
+            System.out.println("\n[ATENCAO] " + arquivosNaoEncontrados + " arquivos nao encontrados:");
+            arquivosFaltantes.forEach(System.out::println);
+        }
+
+        if (arquivosAdicionados == 0) {
+            System.out.println("\n[ERRO] Nenhum arquivo valido foi encontrado. ZIP vazio nao foi criado.");
+            new File(caminhoZip).delete(); // Remove o ZIP vazio
         }
     }
 }
