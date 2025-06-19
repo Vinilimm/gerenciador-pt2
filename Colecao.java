@@ -65,7 +65,7 @@ public class Colecao<T extends PdfEntry> {
                " (autor: " + autor + ", " + entradas.size() + "/" + limite + " itens)";
     }
 
-    
+  
     public void exportarBibTex(String caminhoArquivo) throws IOException {
         if (!tipo.equals(Livro.class)) {
             throw new IllegalArgumentException("Exportação BibTeX só é válida para coleções de livros.");
@@ -95,7 +95,8 @@ public class Colecao<T extends PdfEntry> {
     }
 
     private String formatarChaveBibtex(Livro livro) {
-        String autor = livro.getAutores().split(",")[0].trim().toLowerCase().replaceAll("\\s+", "");
+        String autor = livro.getAutores().get(0).toLowerCase().replaceAll("\\s+", "");
+
         return autor + livro.getAnoPublicacao();
     }
 

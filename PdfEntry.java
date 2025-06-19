@@ -3,14 +3,14 @@ import java.util.List;
 public abstract class PdfEntry {
     private List<String> autores;
     private String titulo;
-    private String subtitulo;
-    private String caminhoPDF;
+    private String pathPdf;
+    private String areaConhecimento;
 
-    public PdfEntry(List<String> autores, String titulo, String subtitulo, String caminhoPDF) {
+    public PdfEntry(List<String> autores, String titulo, String pathPdf, String areaConhecimento) {
         this.autores = autores;
         this.titulo = titulo;
-        this.subtitulo = subtitulo;
-        this.caminhoPDF = caminhoPDF;
+        this.pathPdf = pathPdf;
+        this.areaConhecimento = areaConhecimento;
     }
 
     public List<String> getAutores() {
@@ -21,19 +21,16 @@ public abstract class PdfEntry {
         return titulo;
     }
 
-    public String getSubtitulo() {
-        return subtitulo;
+    public String getPathPdf() {
+        return pathPdf;
     }
 
-    public String getCaminhoPDF() {
-        return caminhoPDF;
+    public String getAreaConhecimento() {
+        return areaConhecimento;
     }
 
     @Override
     public String toString() {
-        return "Autores: " + String.join(", ", autores) +
-               ", Titulo: " + titulo +
-               (!subtitulo.isEmpty() ? ", Subtitulo: " + subtitulo : "") +
-               ", Arquivo: " + caminhoPDF;
+        return "Título: " + titulo + " | Autores: " + autores;
     }
 }

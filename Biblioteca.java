@@ -1,73 +1,108 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.nio.file.*;
-import java.io.IOException;
+import java.util.Scanner;
 
 public class Biblioteca {
-    private String nome;
-    private Path diretorioBase;
-    private List<PdfEntry> entradas;
+    protected List<PdfEntry> entradas;
 
-    public Biblioteca(String nome, Path diretorioBase) {
-        this.nome = nome;
-        this.diretorioBase = diretorioBase;
-        this.entradas = new ArrayList<>();
+    public Biblioteca() {
+        entradas = new ArrayList<>();
     }
 
-    public void adicionarEntrada(PdfEntry entrada) {
-        entradas.add(entrada);
-        copiarParaAutor(entrada);
-    }
-
-    public boolean removerEntrada(String titulo) {
-        for (PdfEntry entrada : entradas) {
-            if (entrada.getTitulo().equalsIgnoreCase(titulo)) {
-                entradas.remove(entrada);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean editarEntrada(String titulo, PdfEntry novaEntrada) {
-        for (int i = 0; i < entradas.size(); i++) {
-            if (entradas.get(i).getTitulo().equalsIgnoreCase(titulo)) {
-                entradas.set(i, novaEntrada);
-                copiarParaAutor(novaEntrada);
-                return true;
-            }
-        }
-        return false;
+    public void adicionarEntrada(PdfEntry e) {
+        entradas.add(e);
     }
 
     public void listarEntradas() {
-        for (PdfEntry entrada : entradas) {
-            System.out.println(entrada);
+        if (entradas.isEmpty()) {
+            System.out.println("Nenhuma entrada cadastrada.");
+            return;
+        }
+        for (PdfEntry e : entradas) {
+            System.out.println(e + "\n");
         }
     }
 
-    private void copiarParaAutor(PdfEntry entrada) {
-        if (entrada.getAutores().isEmpty()) return;
+    public PdfEntry buscarPorTitulo(String titulo) {
+        for (PdfEntry e : entradas) {
+            if (e.getTitulo().equalsIgnoreCase(titulo)) {
+                return e;
+            }
+        }
+        return null;
+    }
 
-        String autor = entrada.getAutores().get(0).replaceAll(" ", "_");
-        Path pastaAutor = diretorioBase.resolve(autor);
-
-        try {
-            Files.createDirectories(pastaAutor);
-            Path origem = Paths.get(entrada.getCaminhoPDF());
-            Path destino = pastaAutor.resolve(origem.getFileName());
-            Files.copy(origem, destino, StandardCopyOption.REPLACE_EXISTING);
-            System.out.println("PDF copiado para " + destino);
-        } catch (IOException e) {
-            System.err.println("Erro ao copiar o arquivo: " + e.getMessage());
+    public void buscarPorAutor(String autor) {
+        boolean encontrado = false;
+        for (PdfEntry e : entradas) {
+            if (e.getAutores().contains(autor)) {
+                System.out.println(e);
+                encontrado = true;
+            }
+        }
+        if (!encontrado) {
+            System.out.println("Nenhuma entrada encontrada para o autor.");
         }
     }
 
-    public String getNome() {
-        return nome;
-    }
+    public void adicionarEntradaViaPrompt(Scanner scanner) {
+    System.out.println("Escolha o tipo: 1-Livro, 2-Nota, 3-Slide");
+    int tipo = Integer.parseInt(scanner.nextLine());
 
-    public Path getDiretorioBase() {
-        return diretorioBase;
+    System.out.println("Digite os nomes dos autores (separados por virgula):");
+    String[] autoresStr = scanner.nextLine().split(",");
+    List<String> autores = new ArrayList<>();
+    for (String s : autoresStr) autores.add(s.trim());
+
+    System.out.println("Digite o titulo:");
+    String titulo = scanner.nextLine();
+
+    System.out.println("Digite o path do PDF:");
+    String path = scanner.nextLine();
+
+    System.out.println("Digite a area de conhecimento:");
+    String area = scanner.nextLine();
+
+    switch (tipo) {
+        case 1: // Livro
+            System.out.println("Digite o subtitulo:");
+            String subtitulo = scanner.nextLine();
+            System.out.println("Digite o ano de publicacao:");
+            int ano = Integer.parseInt(scanner.nextLine());
+            System.out.println("Digite a editora (ou deixe em branco):");
+            String editora = scanner.nextLine();
+            System.out.println("Digite o numero de paginas (ou 0):");
+            int paginas = Integer.parseInt(scanner.nextLine());
+            adicionarEntrada(new Livro(autores, titulo, subtitulo, path, area, ano, editora, paginas));
+            break;
+
+        case 2: // Nota de aula
+            System.out.println("Digite o subtitulo:");
+            String subtNota = scanner.nextLine();
+            System.out.println("Digite a disciplina:");
+            String disciplinaNota = scanner.nextLine();
+            System.out.println("Digite a instituicao (ou deixe em branco):");
+            String instNota = scanner.nextLine();
+            System.out.println("Digite o numero de paginas (ou 0):");
+            int pagNota = Integer.parseInt(scanner.nextLine());
+            adicionarEntrada(new NotaAula(autores, titulo, subtNota, path, area, disciplinaNota, instNota, pagNota));
+            break;
+
+        case 3: // Slide
+            System.out.println("Digite a disciplina:");
+            String disciplinaSlide = scanner.nextLine();
+            System.out.println("Digite a instituicao (ou deixe em branco):");
+            String instSlide = scanner.nextLine();
+            adicionarEntrada(new Slide(autores, titulo, path, area, disciplinaSlide, instSlide));
+            break;
+
+        default:
+            System.out.println("Tipo invalido.");
+    }
+}
+
+
+    public List<PdfEntry> getEntradas() {
+        return entradas;
     }
 }

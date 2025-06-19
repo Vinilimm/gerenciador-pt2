@@ -1,106 +1,185 @@
-import java.nio.file.*;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        Biblioteca biblioteca = null;
+        Persistencia persistencia = new Persistencia();
+        Biblioteca biblioteca = persistencia.carregar();
+        GerenciadorDeColecoes gerenciador = new GerenciadorDeColecoes();
 
-        // Verifica path salvo
-        Path pathSalvo = Persistencia.lerCaminhoBiblioteca();
-        if (pathSalvo != null && Files.exists(pathSalvo)) {
-            System.out.println("Biblioteca encontrada: " + pathSalvo);
-            biblioteca = new Biblioteca("Biblioteca Padrao", pathSalvo);
-        } else {
-            System.out.println("Nenhuma biblioteca encontrada. Digite um path para criar uma nova:");
-            String novoPath = scanner.nextLine();
-            Path pathNovo = Paths.get(novoPath);
-            try {
-                Files.createDirectories(pathNovo);
-                Persistencia.salvarCaminhoBiblioteca(pathNovo);
-                biblioteca = new Biblioteca("Biblioteca Padrao", pathNovo);
-            } catch (Exception e) {
-                System.out.println("Erro ao criar biblioteca: " + e.getMessage());
-                return;
-            }
-        }
-
-        int opcao;
-        do {
-            System.out.println("\nMenu Principal:");
+        int opcao = -1;
+        while (opcao != 0) {
+            System.out.println("\n--- MENU ---");
             System.out.println("1 - Adicionar entrada");
             System.out.println("2 - Listar entradas");
-            System.out.println("3 - Remover entrada");
-            System.out.println("4 - Editar entrada");
-            System.out.println("5 - Criar nova biblioteca");
+            System.out.println("3 - Buscar por titulo");
+            System.out.println("4 - Buscar por autor");
+            System.out.println("5 - Salvar");
             System.out.println("6 - Alternar biblioteca");
-            System.out.println("7 - Criar coleção");
-            System.out.println("8 - Adicionar entrada à coleção");
-            System.out.println("9 - Remover entrada da coleção");
-            System.out.println("10 - Exportar coleção .bib");
-            System.out.println("11 - Exportar coleção .zip");
-            System.out.println("12 - Listar coleções");
+            System.out.println("7 - Criar colecao");
+            System.out.println("8 - Adicionar entrada a colecao");
+            System.out.println("9 - Remover entrada da colecao");
+            System.out.println("10 - Exportar colecao .bib");
+            System.out.println("11 - Exportar colecao .zip");
+            System.out.println("12 - Listar colecoes");
             System.out.println("0 - Sair");
+
             opcao = Integer.parseInt(scanner.nextLine());
 
             switch (opcao) {
                 case 1:
-                    System.out.println("Escolha o tipo: 1-Livro, 2-Nota, 3-Slide");
-                    int tipo = Integer.parseInt(scanner.nextLine());
-                    PdfEntry novaEntrada = EntradaFactory.criarEntrada(tipo, scanner);
-                    biblioteca.adicionarEntrada(novaEntrada);
+                    biblioteca.adicionarEntradaViaPrompt(scanner);
                     break;
+
                 case 2:
                     biblioteca.listarEntradas();
                     break;
+
                 case 3:
-                    System.out.println("Informe o titulo da entrada a remover:");
-                    String tituloRem = scanner.nextLine();
-                    if (biblioteca.removerEntrada(tituloRem))
-                        System.out.println("Removido com sucesso.");
+                    System.out.println("Digite o titulo:");
+                    String titulo = scanner.nextLine();
+                    PdfEntry encontrada = biblioteca.buscarPorTitulo(titulo);
+                    if (encontrada != null)
+                        System.out.println(encontrada);
                     else
-                        System.out.println("Nao encontrado.");
+                        System.out.println("Nao encontrada.");
                     break;
+
                 case 4:
-                    System.out.println("Informe o titulo da entrada a editar:");
-                    String tituloAntigo = scanner.nextLine();
-                    System.out.println("Insira a nova entrada:");
-                    System.out.println("Escolha o tipo: 1-Livro, 2-Nota, 3-Slide");
-                    int tipoNovo = Integer.parseInt(scanner.nextLine());
-                    PdfEntry entradaNova = EntradaFactory.criarEntrada(tipoNovo, scanner);
-                    if (biblioteca.editarEntrada(tituloAntigo, entradaNova))
-                        System.out.println("Editado com sucesso.");
-                    else
-                        System.out.println("Entrada nao encontrada.");
+                    System.out.println("Digite o autor:");
+                    String autorBusca = scanner.nextLine();
+                    biblioteca.buscarPorAutor(autorBusca);
                     break;
+
                 case 5:
-                    System.out.println("Digite o path para nova biblioteca:");
-                    String novo = scanner.nextLine();
-                    Path novoDir = Paths.get(novo);
+                    persistencia.salvar(biblioteca);
+                    System.out.println("Biblioteca salva.");
+                    break;
+
+                case 6:
+                    biblioteca = persistencia.carregar();
+                    System.out.println("Biblioteca atualizada.");
+                    break;
+
+                case 7:
+                    System.out.println("Nome da colecao:");
+                    String nomeCol = scanner.nextLine();
+                    System.out.println("Autor (deve estar nas entradas):");
+                    String autor = scanner.nextLine();
+                    System.out.println("Limite de entradas:");
+                    int limite = Integer.parseInt(scanner.nextLine());
+                    System.out.println("Tipo: 1-Livro, 2-Nota, 3-Slide");
+                    int tipoCol = Integer.parseInt(scanner.nextLine());
+
+                    Class<? extends PdfEntry> classe = null; // Inicializada como null
+                    switch (tipoCol) {
+                        case 1:
+                            classe = Livro.class;
+                            break;
+                        case 2:
+                            classe = NotaAula.class;
+                            break;
+                        case 3:
+                            classe = Slide.class;
+                            break;
+                        default:
+                            System.out.println("Tipo invalido.");
+                            break;
+                    }
+
+                    if (classe != null) { // Verifica se classe foi definida
+                        if (gerenciador.criarColecao(nomeCol, autor, limite, classe))
+                            System.out.println("Colecao criada.");
+                        else
+                            System.out.println("Erro: nome ja em uso.");
+                    }
+                    break;
+
+                case 8:
+                    System.out.println("Nome da colecao:");
+                    String nomeAdd = scanner.nextLine();
+                    System.out.println("Titulo da entrada:");
+                    String tituloAdd = scanner.nextLine();
+                    PdfEntry entradaAdd = biblioteca.buscarPorTitulo(tituloAdd);
+                    if (entradaAdd != null) {
+                        boolean ok = gerenciador.adicionarEntrada(nomeAdd, entradaAdd);
+                        System.out.println(ok ? "Entrada adicionada." : "Erro ao adicionar.");
+                    } else {
+                        System.out.println("Entrada nao encontrada.");
+                    }
+                    break;
+
+                case 9:
+                    System.out.println("Nome da colecao:");
+                    String nomeRem = scanner.nextLine();
+                    System.out.println("Titulo da entrada:");
+                    String tituloRemover = scanner.nextLine();
+                    PdfEntry entradaRem = biblioteca.buscarPorTitulo(tituloRemover);
+                    if (entradaRem != null) {
+                        boolean ok = gerenciador.removerEntrada(nomeRem, entradaRem);
+                        System.out.println(ok ? "Removida." : "Erro ao remover.");
+                    } else {
+                        System.out.println("Entrada nao encontrada.");
+                    }
+                    break;
+
+                case 10:
+                    System.out.println("Nome da colecao:");
+                    String nomeBib = scanner.nextLine();
+                    System.out.println("Caminho do arquivo .bib:");
+                    String pathBib = scanner.nextLine();
+
                     try {
-                        Files.createDirectories(novoDir);
-                        Persistencia.salvarCaminhoBiblioteca(novoDir);
-                        biblioteca = new Biblioteca("Nova Biblioteca", novoDir);
-                        System.out.println("Nova biblioteca criada e ativada.");
+                        Colecao<?> colBib = gerenciador.buscarColecao(nomeBib);
+                        if (colBib != null) {
+                            if (colBib.getTipo().equals(Livro.class)) {
+                                @SuppressWarnings("unchecked") 
+                                Colecao<Livro> colecaoLivros = (Colecao<Livro>) colBib;
+                                colecaoLivros.exportarBibTex(pathBib);
+                                System.out.println("Arquivo .bib exportado.");
+                            } else {
+                                System.out.println("Erro: Colecao nao e de livros.");
+                            }
+                        } else {
+                            System.out.println("Colecao nao encontrada.");
+                        }
                     } catch (Exception e) {
                         System.out.println("Erro: " + e.getMessage());
                     }
                     break;
-                case 6:
-                    System.out.println("Digite o path de uma biblioteca existente:");
-                    String existente = scanner.nextLine();
-                    Path existePath = Paths.get(existente);
-                    if (Files.exists(existePath)) {
-                        Persistencia.salvarCaminhoBiblioteca(existePath);
-                        biblioteca = new Biblioteca("Alternada", existePath);
-                        System.out.println("Biblioteca alternada com sucesso.");
-                    } else {
-                        System.out.println("Path nao encontrado.");
+
+                case 11:
+                    System.out.println("Nome da colecao:");
+                    String nomeZip = scanner.nextLine();
+                    System.out.println("Caminho do arquivo .zip:");
+                    String pathZip = scanner.nextLine();
+
+                    try {
+                        Colecao<?> colZip = gerenciador.buscarColecao(nomeZip);
+                        if (colZip != null) {
+                            colZip.exportarZip(pathZip);
+                            System.out.println("ZIP gerado.");
+                        } else {
+                            System.out.println("Colecao nao encontrada.");
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Erro: " + e.getMessage());
                     }
                     break;
-                 
-            }
 
-        } while (opcao != 0);
+                case 12:
+                    gerenciador.listarColecoes();
+                    break;
+
+                case 0:
+                    System.out.println("Encerrando...");
+                    break;
+
+                default:
+                    System.out.println("Opcao invalida.");
+            }
+        }
+
+        scanner.close();
     }
 }

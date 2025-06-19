@@ -1,28 +1,28 @@
 
-
 import java.util.*;
-
 
 public class EntradaFactory {
     public static PdfEntry criarEntrada(int tipo, Scanner scanner) {
-        System.out.println("Digite os nomes dos autores (separados por virgula):");
-        String[] autores = scanner.nextLine().split(",");
+        System.out.println("Digite os nomes dos autores (separados por vírgula):");
+        String[] autoresStr = scanner.nextLine().split(",");
         List<String> listaAutores = new ArrayList<>();
-        for (String autor : autores) listaAutores.add(autor.trim());
+        for (String s : autoresStr)
+            listaAutores.add(s.trim());
 
-        System.out.println("Digite o titulo:");
+        System.out.println("Digite o título:");
         String titulo = scanner.nextLine();
 
-        System.out.println("Digite o subtitulo (ou deixe em branco):");
+        System.out.println("Digite o subtítulo:");
         String subtitulo = scanner.nextLine();
 
         System.out.println("Digite o path do PDF:");
         String caminho = scanner.nextLine();
 
+        System.out.println("Digite a área de conhecimento:");
+        String area = scanner.nextLine(); 
+
         switch (tipo) {
             case 1: // Livro
-                System.out.println("Digite a area de conhecimento:");
-                String area = scanner.nextLine();
                 System.out.println("Digite o ano de publicacao:");
                 int ano = Integer.parseInt(scanner.nextLine());
                 System.out.println("Digite a editora (opcional):");
@@ -38,14 +38,15 @@ public class EntradaFactory {
                 String instituicaoNota = scanner.nextLine();
                 System.out.println("Digite o número de paginas (ou 0 se desconhecido):");
                 int paginasNota = Integer.parseInt(scanner.nextLine());
-                return new NotaAula(listaAutores, titulo, subtitulo, caminho, disciplina, instituicaoNota, paginasNota);
+                return new NotaAula(listaAutores, titulo, subtitulo, caminho, area, disciplina, instituicaoNota,
+                        paginasNota);
 
             case 3: // Slide
                 System.out.println("Digite o nome da disciplina:");
                 String disciplinaSlide = scanner.nextLine();
                 System.out.println("Digite a instituicao (opcional):");
                 String instituicaoSlide = scanner.nextLine();
-                return new Slide(listaAutores, titulo, caminho, disciplinaSlide, instituicaoSlide);
+                return new Slide(listaAutores, titulo, caminho, area, disciplinaSlide, instituicaoSlide);
 
             default:
                 System.out.println("Tipo invalido.");

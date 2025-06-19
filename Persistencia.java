@@ -1,26 +1,33 @@
 import java.io.*;
-import java.nio.file.*;
+import java.util.List;
 
 public class Persistencia {
-    private static final String ARQUIVO_CAMINHO = "caminho_biblioteca.txt";
+    private static final String ARQUIVO = "biblioteca.dat";
 
-    public static void salvarCaminhoBiblioteca(Path caminho) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(ARQUIVO_CAMINHO))) {
-            writer.write(caminho.toAbsolutePath().toString());
+    public void salvar(Biblioteca biblioteca) {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(ARQUIVO))) {
+            out.writeObject(biblioteca.getEntradas());
         } catch (IOException e) {
-            System.err.println("Erro ao salvar caminho: " + e.getMessage());
+            System.out.println("Erro ao salvar: " + e.getMessage());
         }
     }
 
-    public static Path lerCaminhoBiblioteca() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(ARQUIVO_CAMINHO))) {
-            String linha = reader.readLine();
-            if (linha != null && !linha.isEmpty()) {
-                return Paths.get(linha);
+   @SuppressWarnings("unchecked") 
+public Biblioteca carregar() {
+    Biblioteca b = new Biblioteca();
+    File f = new File(ARQUIVO);
+    if (!f.exists()) return b;
+
+    try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(ARQUIVO))) {
+        List<PdfEntry> lista = (List<PdfEntry>) in.readObject();
+        for (PdfEntry e : lista) {
+            if (e != null) { // Validação opcional para evitar nulls
+                b.adicionarEntrada(e);
             }
-        } catch (IOException e) {
-            // Ignora erro, será tratado no main
         }
-        return null;
+    } catch (Exception e) {
+        System.out.println("Erro ao carregar: " + e.getMessage());
     }
+    return b;
+}
 }
